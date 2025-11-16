@@ -1,37 +1,48 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const app = express();
-app.use(express.json());
-app.use(express.static("public"));
-
-const DATA_FILE = path.join(__dirname, "data.json");
-if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, JSON.stringify([]));
-
-function load() { return JSON.parse(fs.readFileSync(DATA_FILE)); }
-function save(data) { fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2)); }
-
-app.get("/get-project/:id", (req, res) => {
-  const data = load();
-  const proj = data.find(p => p.projectId === req.params.id) || { components: [], name: "New Project" };
-  res.json(proj);
-});
-
-app.post("/save-project", (req, res) => {
-  const { projectId, components } = req.body;
-  let data = load();
-  data = data.filter(p => p.projectId !== projectId);
-  data.push({ projectId, components, updatedAt: new Date().toISOString() });
-  save(data);
-  res.json({ ok: true });
-});
-
-app.get("/health", (req, res) => res.json({ status: "ok", vibe: "on" }));
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`VIBEⓈ Backend running on ${PORT}`));
+
+// Middleware
+app.use(express.json());
+app.use(express.static('public'));
+
+// Data file
+const DATA_FILE = path.join(__dirname, '..', 'data.json');
+
+// Ensure data file exists
+if (!fs.existsSync(DATA_FILE)) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify({ blocks: [] }, null, 2));
+}
+
+// API: Get current page
+app.get('/api/page', (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read data' });
+  }
+});
+
+// API: Save page
+app.post('/api/page', (req, res) => {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save' });
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', vibe: 'on' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`VIBE⓸ Backend running on ${PORT}`);
+  console.log(`Your service is live at https://vibe-code-editor.onrender.com`);
+});
