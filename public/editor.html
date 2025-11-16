@@ -1,306 +1,205 @@
 <!DOCTYPE html>
-<html lang="en" x-data="builderApp()">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIBEⓈ Visual Builder – Live Code Sync</title>
+  <title>VIBEⓈ Live HTML Preview</title>
 
-  <!-- Tailwind -->
+  <!-- Tailwind for the editor UI itself -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- AlpineJS -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <!-- SortableJS -->
-  <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
   <style>
-    .drag-handle { cursor: move; }
-    .component:hover { outline: 2px solid #60a5fa; }
-    [contenteditable]:focus { outline: 2px solid #3b82f6; border-radius: 6px; }
-    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      tab-size: 2;
+    }
+    body {
+      background: #020617;
+    }
   </style>
 </head>
+<body class="min-h-screen text-slate-100">
 
-<body class="bg-gray-900 text-white min-h-screen flex">
-
-  <!-- LEFT: VISUAL CONTROL PANEL -->
-  <div class="w-full lg:w-1/3 bg-gray-950 p-5 space-y-5 border-r border-gray-800">
-    <h1 class="text-2xl font-bold mb-2">✨ VIBEⓈ Visual Builder</h1>
-
-    <div class="space-y-2">
-      <label class="text-xs text-gray-400">Project Name</label>
-      <input x-model="projectName" class="w-full px-3 py-2 bg-gray-800 rounded" />
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <button @click="add('hero')" class="px-4 py-2 bg-blue-600 rounded">+ Hero</button>
-      <button @click="add('text')" class="px-4 py-2 bg-slate-600 rounded">+ Text</button>
-      <button @click="add('buttonGrid')" class="px-4 py-2 bg-green-600 rounded">+ Buttons</button>
-      <button @click="add('image')" class="px-4 py-2 bg-purple-600 rounded">+ Image</button>
-      <button @click="add('form')" class="px-4 py-2 bg-orange-600 rounded">+ Form</button>
-      <button @click="updateCode()" class="px-4 py-2 bg-emerald-600 rounded">↻ Refresh Code</button>
-    </div>
-
-    <!-- COMPONENT LIST -->
-    <div class="space-y-4 max-h-[70vh] overflow-y-auto" x-ref="builder">
-      <template x-for="(comp, i) in components" :key="i">
-        <div class="p-4 bg-gray-800 rounded component relative group">
-          <div class="drag-handle absolute right-2 top-2 text-blue-400 opacity-0 group-hover:opacity-100">≡</div>
-          <div class="absolute left-2 top-2 text-red-400 opacity-0 group-hover:opacity-100 cursor-pointer"
-               @click="remove(i)">✕</div>
-
-          <div class="text-[10px] uppercase text-gray-400 mb-2" x-text="comp.type"></div>
-
-          <!-- HERO -->
-          <template x-if="comp.type === 'hero'">
-            <div>
-              <div contenteditable
-                   @blur="updateField(i, 'title', $event.target.innerText)"
-                   class="text-lg font-semibold"
-                   x-text="comp.title"></div>
-              <div contenteditable
-                   @blur="updateField(i, 'subtitle', $event.target.innerText)"
-                   class="text-xs text-gray-400 mt-1"
-                   x-text="comp.subtitle"></div>
-            </div>
-          </template>
-
-          <!-- TEXT -->
-          <template x-if="comp.type === 'text'">
-            <div contenteditable
-                 @blur="updateField(i, 'content', $event.target.innerText)"
-                 class="text-sm leading-relaxed"
-                 x-text="comp.content"></div>
-          </template>
-
-          <!-- BUTTON GRID -->
-          <template x-if="comp.type === 'buttonGrid'">
-            <div class="space-y-2">
-              <template x-for="(btn, bi) in comp.buttons" :key="bi">
-                <div class="flex space-x-2">
-                  <input x-model="comp.buttons[bi].text"
-                         @input="updateCode()"
-                         class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
-                         placeholder="Button text" />
-                  <input x-model="comp.buttons[bi].url"
-                         @input="updateCode()"
-                         class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
-                         placeholder="URL" />
-                  <button @click="comp.buttons.splice(bi,1); updateCode();"
-                          class="text-red-400 text-xs">✕</button>
-                </div>
-              </template>
-              <button @click="comp.buttons.push({text:'New Button',url:'#'}); updateCode();"
-                      class="text-blue-400 text-xs">+ Add Button</button>
-            </div>
-          </template>
-
-          <!-- IMAGE -->
-          <template x-if="comp.type === 'image'">
-            <div>
-              <input x-model="comp.src"
-                     @input="updateCode()"
-                     class="w-full px-2 py-1 bg-gray-700 rounded text-xs mb-2"
-                     placeholder="Image URL" />
-              <img :src="comp.src" class="w-full rounded opacity-80" />
-            </div>
-          </template>
-
-          <!-- FORM -->
-          <template x-if="comp.type === 'form'">
-            <div>
-              <template x-for="(field, fi) in comp.fields" :key="fi">
-                <div class="flex space-x-2 mb-2">
-                  <input x-model="field.label"
-                         @input="updateCode()"
-                         class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
-                         placeholder="Label" />
-                  <input x-model="field.type"
-                         @input="updateCode()"
-                         class="w-20 px-2 py-1 bg-gray-700 rounded text-xs"
-                         placeholder="text/email" />
-                  <button @click="comp.fields.splice(fi,1); updateCode();"
-                          class="text-red-400 text-xs">✕</button>
-                </div>
-              </template>
-              <button @click="comp.fields.push({label:'Field',type:'text'}); updateCode();"
-                      class="text-blue-400 text-xs">+ Add Field</button>
-            </div>
-          </template>
-        </div>
-      </template>
-    </div>
-  </div>
-
-  <!-- MIDDLE: LIVE PREVIEW -->
-  <div class="hidden lg:block w-1/3 bg-gray-100 text-black p-6 overflow-y-auto">
-    <div class="max-w-2xl mx-auto space-y-10">
-      <template x-for="comp in components">
+  <div class="h-screen flex flex-col">
+    <!-- Top bar -->
+    <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950">
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 text-xl">✨</span>
         <div>
-
-          <!-- HERO PREVIEW -->
-          <template x-if="comp.type === 'hero'">
-            <section class="text-center py-10">
-              <h1 class="text-4xl font-bold" x-text="comp.title"></h1>
-              <p class="mt-3 text-gray-600 text-lg" x-text="comp.subtitle"></p>
-            </section>
-          </template>
-
-          <!-- TEXT PREVIEW -->
-          <template x-if="comp.type === 'text'">
-            <section class="py-4">
-              <p class="text-lg leading-relaxed" x-text="comp.content"></p>
-            </section>
-          </template>
-
-          <!-- BUTTON GRID PREVIEW -->
-          <template x-if="comp.type === 'buttonGrid'">
-            <section class="py-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <template x-for="btn in comp.buttons">
-                  <a :href="btn.url"
-                     class="block text-center py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">
-                    <span x-text="btn.text"></span>
-                  </a>
-                </template>
-              </div>
-            </section>
-          </template>
-
-          <!-- IMAGE PREVIEW -->
-          <template x-if="comp.type === 'image'">
-            <section class="py-4">
-              <img :src="comp.src" class="w-full rounded shadow" />
-            </section>
-          </template>
-
-          <!-- FORM PREVIEW -->
-          <template x-if="comp.type === 'form'">
-            <section class="py-4">
-              <form class="space-y-4">
-                <template x-for="field in comp.fields">
-                  <input :type="field.type" :placeholder="field.label"
-                         class="w-full px-4 py-3 border rounded" />
-                </template>
-                <button class="w-full py-3 bg-green-600 text-white rounded">Submit</button>
-              </form>
-            </section>
-          </template>
-
+          <h1 class="text-sm font-semibold leading-tight">VIBEⓈ Live HTML Preview</h1>
+          <p class="text-[11px] text-slate-400">Paste HTML · Tailwind preview · tweak visually · copy back to GitHub</p>
         </div>
-      </template>
-    </div>
+      </div>
+
+      <!-- Layout controls -->
+      <div class="flex flex-wrap items-center gap-3 text-[11px]">
+        <div class="flex items-center gap-1">
+          <span class="text-slate-400">Width</span>
+          <select id="widthSelect" class="bg-slate-900 border border-slate-700 rounded px-2 py-1">
+            <option value="max-w-xl">Narrow</option>
+            <option value="max-w-3xl" selected>Medium</option>
+            <option value="max-w-5xl">Wide</option>
+            <option value="max-w-none">Full</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-1">
+          <span class="text-slate-400">Padding</span>
+          <select id="paddingSelect" class="bg-slate-900 border border-slate-700 rounded px-2 py-1">
+            <option value="p-0">0</option>
+            <option value="p-6" selected>Medium</option>
+            <option value="p-10">Large</option>
+          </select>
+        </div>
+
+        <label class="inline-flex items-center gap-1 cursor-pointer">
+          <input id="gridToggle" type="checkbox" class="rounded border-slate-600 bg-slate-900">
+          <span class="text-slate-400">Alignment grid</span>
+        </label>
+      </div>
+    </header>
+
+    <!-- Main content: editor + preview -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0">
+      <!-- LEFT: HTML editor -->
+      <section class="border-r border-slate-800 bg-slate-950 flex flex-col">
+        <div class="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">HTML Source</span>
+          <span class="text-[11px] text-slate-500">Edit here → preview updates on the right</span>
+        </div>
+        <textarea
+          id="htmlInput"
+          class="flex-1 w-full bg-slate-950 text-slate-100 text-[12px] leading-relaxed p-3 outline-none resize-none"
+          spellcheck="false"></textarea>
+      </section>
+
+      <!-- RIGHT: Live preview (iframe) -->
+      <section class="bg-slate-900 flex flex-col">
+        <div class="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">Live Preview</span>
+          <span class="text-[11px] text-slate-500">Rendered with Tailwind CDN</span>
+        </div>
+        <iframe
+          id="previewFrame"
+          class="flex-1 w-full bg-white"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        ></iframe>
+      </section>
+    </main>
   </div>
 
-  <!-- RIGHT: GENERATED CODE -->
-  <div class="w-full lg:w-1/3 bg-black p-5 border-l border-gray-800 flex flex-col">
-    <div class="flex items-center justify-between mb-2">
-      <h2 class="text-sm font-semibold text-gray-100">Generated HTML</h2>
-      <span class="text-[10px] text-gray-500">Edit visually → code auto-updates</span>
-    </div>
-
-    <textarea x-model="generatedCode"
-              class="flex-1 w-full bg-gray-900 text-[11px] text-green-100 rounded p-3 border border-gray-700 resize-none"
-              spellcheck="false"></textarea>
-
-    <p class="mt-2 text-[10px] text-gray-500">
-      This code is generated from the visual builder. Copy and paste into any project.
-      (Right now, changes here do <strong>not</strong> sync back to the visual layout — this is your export view.)
-    </p>
-  </div>
-
-<script>
-function builderApp() {
-  return {
-    projectName: "Untitled Project",
-    components: [
-      { type: 'hero', title: 'Your Title', subtitle: 'Your subtitle' }
-    ],
-    generatedCode: "",
-
-    add(type) {
-      const templates = {
-        hero: { type:'hero', title:'Your Title', subtitle:'Your subtitle' },
-        text: { type:'text', content:'Editable text...' },
-        buttonGrid: { type:'buttonGrid', buttons:[{text:'Button',url:'#'}] },
-        image: { type:'image', src:'https://via.placeholder.com/800x400' },
-        form: { type:'form', fields:[{label:'Name', type:'text'}] }
+  <script>
+    // Simple debounce so we don't re-render on every single keystroke
+    function debounce(fn, delay) {
+      let t;
+      return function () {
+        const args = arguments;
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(null, args), delay);
       };
-      this.components.push(templates[type]);
-      this.updateCode();
-    },
-
-    updateField(i, field, value) {
-      this.components[i][field] = value;
-      this.updateCode();
-    },
-
-    remove(i) {
-      this.components.splice(i, 1);
-      this.updateCode();
-    },
-
-    updateCode() {
-      // Build exportable HTML string from current components
-      let html = `<!-- ${this.projectName} -->\n<div class="min-h-screen bg-gray-100 text-gray-900">\n  <main class="max-w-4xl mx-auto p-6 space-y-10">\n`;
-      this.components.forEach(comp => {
-        if (comp.type === 'hero') {
-          html += `    <section class="text-center py-10">\n`;
-          html += `      <h1 class="text-4xl font-bold">${comp.title}</h1>\n`;
-          html += `      <p class="mt-3 text-gray-600 text-lg">${comp.subtitle}</p>\n`;
-          html += `    </section>\n`;
-        }
-        if (comp.type === 'text') {
-          html += `    <section class="py-4">\n`;
-          html += `      <p class="text-lg leading-relaxed">${comp.content}</p>\n`;
-          html += `    </section>\n`;
-        }
-        if (comp.type === 'buttonGrid') {
-          html += `    <section class="py-4">\n`;
-          html += `      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">\n`;
-          comp.buttons.forEach(btn => {
-            html += `        <a href="${btn.url}" class="block text-center py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">${btn.text}</a>\n`;
-          });
-          html += `      </div>\n`;
-          html += `    </section>\n`;
-        }
-        if (comp.type === 'image') {
-          html += `    <section class="py-4">\n`;
-          html += `      <img src="${comp.src}" class="w-full rounded shadow" />\n`;
-          html += `    </section>\n`;
-        }
-        if (comp.type === 'form') {
-          html += `    <section class="py-4">\n`;
-          html += `      <form class="space-y-4">\n`;
-          comp.fields.forEach(field => {
-            html += `        <input type="${field.type}" placeholder="${field.label}" class="w-full px-4 py-3 border rounded" />\n`;
-          });
-          html += `        <button class="w-full py-3 bg-green-600 text-white rounded">Submit</button>\n`;
-          html += `      </form>\n`;
-          html += `    </section>\n`;
-        }
-      });
-      html += `  </main>\n</div>\n`;
-      this.generatedCode = html;
-    },
-
-    init() {
-      this.updateCode();
-
-      // Make builder list draggable
-      const self = this;
-      new Sortable(this.$refs.builder, {
-        handle: ".drag-handle",
-        animation: 150,
-        onEnd(evt) {
-          const moved = self.components.splice(evt.oldIndex, 1)[0];
-          self.components.splice(evt.newIndex, 0, moved);
-          self.updateCode();
-        }
-      });
     }
-  }
-}
-</script>
 
+    const htmlInput = document.getElementById("htmlInput");
+    const previewFrame = document.getElementById("previewFrame");
+    const widthSelect = document.getElementById("widthSelect");
+    const paddingSelect = document.getElementById("paddingSelect");
+    const gridToggle = document.getElementById("gridToggle");
+
+    // Starter content so it's not empty
+    const starterHtml = `<!-- Paste ANY HTML snippet here.
+You do NOT need <html> or <body> tags — this will be wrapped for you.
+
+Example: -->
+
+<section class="bg-white rounded-xl shadow p-8 space-y-4">
+  <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+    Your Title
+  </h1>
+  <p class="text-slate-600">
+    This is a live Tailwind preview. Adjust classes, spacing, and layout here,
+    then copy the HTML back into your GitHub file.
+  </p>
+
+  <div class="flex flex-wrap gap-3">
+    <a href="#" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold">
+      Primary action
+    </a>
+    <a href="#" class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium">
+      Secondary
+    </a>
+  </div>
+</section>`;
+
+    htmlInput.value = starterHtml;
+
+    function buildPreviewHtml() {
+      const userHtml = htmlInput.value || "";
+
+      const widthClass = widthSelect.value || "max-w-3xl";
+      const paddingClass = paddingSelect.value || "p-6";
+      const gridOn = gridToggle.checked;
+
+      const gridCss = gridOn
+        ? `
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(148,163,184,0.18) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0;
+      }`
+        : "";
+
+      // Full HTML document that will run inside the iframe
+      return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #e5e7eb; }
+    ${gridCss}
+  </style>
+</head>
+<body>
+  <div class="min-h-screen flex justify-center">
+    <div class="${widthClass} ${paddingClass} w-full relative z-10">
+${userHtml}
+    </div>
+  </div>
+</body>
+</html>
+      `.trim();
+    }
+
+    const render = debounce(function () {
+      const doc = buildPreviewHtml();
+      previewFrame.srcdoc = doc;
+      // Save last code locally so it persists
+      try {
+        localStorage.setItem("vibe_live_editor_html", htmlInput.value);
+      } catch (e) {}
+    }, 200);
+
+    // Restore last session if available
+    try {
+      const saved = localStorage.getItem("vibe_live_editor_html");
+      if (saved) htmlInput.value = saved;
+    } catch (e) {}
+
+    htmlInput.addEventListener("input", render);
+    widthSelect.addEventListener("change", render);
+    paddingSelect.addEventListener("change", render);
+    gridToggle.addEventListener("change", render);
+
+    // Initial render
+    render();
+  </script>
 </body>
 </html>
