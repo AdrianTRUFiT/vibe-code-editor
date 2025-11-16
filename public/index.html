@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" x-data="app()">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title x-text="project.name || 'VIBEⓈ Code Editor'"></title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script type="module">
+    import { CONFIG } from "./config.js";
+    window.CONFIG = CONFIG;
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
+
+  <div class="max-w-4xl mx-auto p-8 space-y-16">
+    <template x-for="comp in project.components" :key="comp.id">
+      <!-- HERO -->
+      <div x-show="comp.type === 'hero'" class="text-center py-16">
+        <h1 class="text-6xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent" x-text="comp.title"></h1>
+        <p class="mt-6 text-xl text-gray-300" x-text="comp.subtitle"></p>
+      </div>
+
+      <!-- TEXT -->
+      <div x-show="comp.type === 'text'" class="prose prose-invert max-w-none" x-html="comp.content"></div>
+
+      <!-- BUTTONS -->
+      <div x-show="comp.type === 'buttons'" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <template x-for="btn in comp.buttons">
+          <a :href="btn.url" class="block text-center py-5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl font-bold hover:scale-105 transition">
+            <span x-text="btn.text"></span>
+          </a>
+        </template>
+      </div>
+
+      <!-- IMAGE -->
+      <img x-show="comp.type === 'image'" :src="comp.src" class="w-full rounded-2xl shadow-2xl" />
+
+      <!-- FORM -->
+      <form x-show="comp.type === 'form'" :action="comp.action" method="POST" class="space-y-6 bg-white/10 p-8 rounded-2xl">
+        <template x-for="field in comp.fields">
+          <input :type="field.type" :placeholder="field.label" class="w-full px-5 py-4 bg-white/20 rounded-lg text-white placeholder-gray-400" />
+        </template>
+        <button type="submit" class="w-full py-4 bg-gradient-to-r from-green-500 to-teal-600 rounded-xl font-bold hover:scale-105 transition">Submit</button>
+      </form>
+    </template>
+
+    <div class="text-center py-12">
+      <a :href="'/editor.html#' + projectId" class="text-yellow-400 underline text-lg font-bold">
+        Edit with VIBEⓈ Code Editor
+      </a>
+    </div>
+  </div>
+
+  <script>
+    function app() {
+      return {
+        project: { name: "Loading...", components: [] },
+        projectId: window.location.pathname.slice(1) || 'home',
+
+        async init() {
+          const res = await fetch(`${CONFIG.BACKEND_URL}/get-project/${this.projectId}`);
+          const data = await res.json();
+          this.project = data;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
