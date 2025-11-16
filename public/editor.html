@@ -3,12 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VIBEⓈ Code Editor</title>
-  <script type="module">
-    import { CONFIG } from "./config.js";
-    window.CONFIG = CONFIG;
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css"></script>
+  <title>VIBE⓸ Code Editor</title>
+  <script src="config.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <style>
     [contenteditable]:focus { outline: 2px solid #f0abfc; border-radius: 8px; }
@@ -16,13 +13,11 @@
     .component:hover { box-shadow: 0 0 0 3px #c084fc; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-purple-900 to-indigo-900 text-white min-h-screen p-6" x-data="editor()">
-
+<body class="bg-gradient-to-br from-purple-900 to-indigo-900 text-white min-h-screen p-6" x-data="editor()" x-init="init()">
   <div class="max-w-6xl mx-auto">
     <h1 class="text-4xl font-bold bg-gradient-to-r from-pink-400 to-yellow-400 bg-clip-text text-transparent mb-8">
-      VIBEⓈ Code Editor
+      VIBE⓸ Code Editor
     </h1>
-
     <div class="mb-6 flex gap-3 flex-wrap">
       <button @click="add('hero')" class="px-5 py-2 bg-pink-600 rounded-lg hover:bg-pink-500">+ Hero</button>
       <button @click="add('text')" class="px-5 py-2 bg-purple-600 rounded-lg hover:bg-purple-500">+ Text</button>
@@ -31,13 +26,11 @@
       <button @click="add('form')" class="px-5 py-2 bg-green-600 rounded-lg hover:bg-green-500">+ Form</button>
       <button @click="save()" class="px-5 py-2 bg-yellow-600 rounded-lg hover:bg-yellow-500">Save & Deploy</button>
     </div>
-
     <div class="space-y-6" x-ref="canvas">
       <template x-for="(c, i) in components" :key="i">
         <div class="component p-8 bg-white/10 backdrop-blur rounded-2xl relative group">
           <div class="drag-handle absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-pink-400">Move</div>
           <div class="absolute top-3 left-3 opacity-0 group-hover:opacity-100 text-red-400 cursor-pointer" @click="remove(i)">Delete</div>
-
           <!-- HERO -->
           <template x-if="c.type === 'hero'">
             <div class="text-center">
@@ -45,12 +38,10 @@
               <div contenteditable @blur="c.subtitle = $event.target.innerText" x-text="c.subtitle" class="text-xl text-gray-300"></div>
             </div>
           </template>
-
           <!-- TEXT -->
           <template x-if="c.type === 'text'">
             <div contenteditable @blur="c.content = $event.target.innerText" x-text="c.content" class="prose prose-invert"></div>
           </template>
-
           <!-- BUTTONS -->
           <template x-if="c.type === 'buttons'">
             <div class="grid grid-cols-3 gap-3">
@@ -63,13 +54,11 @@
               <button @click="c.buttons.push({text:'New', url:'#'})" class="border border-dashed border-white/30 text-white/60 py-8 rounded">+ Button</button>
             </div>
           </template>
-
           <!-- IMAGE -->
           <template x-if="c.type === 'image'">
             <input x-model="c.src" @change="save()" placeholder="Image URL" class="w-full px-3 py-2 bg-white/20 rounded mb-3" />
             <img :src="c.src" class="w-full rounded-lg max-h-96 object-cover" />
           </template>
-
           <!-- FORM -->
           <template x-if="c.type === 'form'">
             <input x-model="c.action" @change="save()" placeholder="Form Action" class="w-full px-3 py-2 bg-white/20 rounded mb-3" />
@@ -86,13 +75,11 @@
       </template>
     </div>
   </div>
-
   <script>
     function editor() {
       return {
         components: [],
         projectId: window.location.hash.slice(1) || 'home',
-
         add(type) {
           const t = {
             hero: { type: 'hero', title: 'New Hero', subtitle: 'Edit me' },
@@ -104,21 +91,18 @@
           this.components.push(t[type]);
           this.save();
         },
-
         remove(i) { this.components.splice(i, 1); this.save(); },
-
         async save() {
-          await fetch(`${CONFIG.BACKEND_URL}/save-project`, {
+          await fetch(`${window.CONFIG.BACKEND_URL}/api/page`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ projectId: this.projectId, components: this.components })
+            body: JSON.stringify({ blocks: this.components })
           });
         },
-
-        init() {
-          fetch(`${CONFIG.BACKEND_URL}/get-project/${this.projectId}`)
-            .then(r => r.json())
-            .then(d => this.components = d.components || []);
+        async init() {
+          const res = await fetch(`${window.CONFIG.BACKEND_URL}/api/page`);
+          const data = await res.json();
+          this.components = data.blocks || [];
           new Sortable(this.$refs.canvas, { handle: '.drag-handle', onEnd: () => this.save() });
         }
       }
