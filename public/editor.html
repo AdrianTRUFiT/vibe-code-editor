@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VIBEⓈ Universal Visual Builder</title>
+  <title>VIBEⓈ Visual Builder</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
   <!-- SortableJS -->
   <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
-  <!-- Link to backend config -->
+  <!-- Backend config -->
   <script type="module">
     import { CONFIG } from "./config.js";
     window.CONFIG = CONFIG;
@@ -24,98 +24,159 @@
     .drag-handle { cursor: move; }
     .component:hover { outline: 2px solid #60a5fa; }
     [contenteditable]:focus { outline: 2px solid #3b82f6; border-radius: 6px; }
+    textarea.code-area {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
   </style>
 </head>
 
 <body class="bg-gray-900 text-white min-h-screen flex">
 
-  <!-- LEFT PANE (Dark Builder UI) -->
-  <div class="w-1/3 bg-gray-950 p-6 space-y-6 border-r border-gray-800">
+  <!-- LEFT: Builder -->
+  <div class="w-full md:w-1/3 bg-gray-950 p-6 space-y-6 border-r border-gray-800">
 
-    <h1 class="text-2xl font-bold mb-6">
-      ✨ VIBEⓈ Visual Builder
+    <h1 class="text-2xl font-bold mb-2 flex items-center gap-2">
+      <span>⭐ VIBEⓈ Visual Builder</span>
     </h1>
 
     <!-- Project Name -->
-    <div class="space-y-2">
+    <div class="space-y-1">
       <label class="text-xs text-gray-400">Project Name</label>
-      <input x-model="projectName" class="w-full px-3 py-2 bg-gray-800 rounded" />
+      <input x-model="projectName" class="w-full px-3 py-2 bg-gray-800 rounded border border-gray-700" />
     </div>
 
-    <!-- Add Components -->
+    <!-- Controls -->
     <div class="grid grid-cols-2 gap-3">
-      <button @click="add('hero')" class="px-4 py-2 bg-blue-600 rounded">+ Hero</button>
-      <button @click="add('text')" class="px-4 py-2 bg-gray-700 rounded">+ Text</button>
-      <button @click="add('buttonGrid')" class="px-4 py-2 bg-green-600 rounded">+ Buttons</button>
-      <button @click="add('image')" class="px-4 py-2 bg-purple-600 rounded">+ Image</button>
-      <button @click="add('form')" class="px-4 py-2 bg-orange-600 rounded">+ Form</button>
-      <button @click="save()" class="px-4 py-2 bg-emerald-600 rounded">💾 Save</button>
+      <button @click="add('hero')" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500 text-sm">+ Hero</button>
+      <button @click="add('text')" class="px-4 py-2 bg-slate-600 rounded hover:bg-slate-500 text-sm">+ Text</button>
+      <button @click="add('buttonGrid')" class="px-4 py-2 bg-green-600 rounded hover:bg-green-500 text-sm">+ Buttons</button>
+      <button @click="add('image')" class="px-4 py-2 bg-purple-600 rounded hover:bg-purple-500 text-sm">+ Image</button>
+      <button @click="add('form')" class="px-4 py-2 bg-orange-600 rounded hover:bg-orange-500 text-sm">+ Form</button>
+      <button @click="save()" class="px-4 py-2 bg-emerald-600 rounded hover:bg-emerald-500 text-sm">💾 Save</button>
     </div>
 
-    <!-- Components List (Reorderable) -->
+    <!-- Components List (sortable) -->
     <div class="space-y-4" x-ref="builder">
       <template x-for="(comp, i) in components" :key="i">
         <div class="p-4 bg-gray-800 rounded component relative group">
 
-          <div class="drag-handle absolute right-2 top-2 text-blue-400 opacity-0 group-hover:opacity-100">≡</div>
-          <div class="absolute left-2 top-2 text-red-400 opacity-0 group-hover:opacity-100 cursor-pointer"
-              @click="remove(i)">✕</div>
-
-          <div class="text-xs text-gray-400 uppercase mb-2">
+          <!-- Top bar -->
+          <div class="flex items-center justify-between mb-2 text-xs text-gray-400 uppercase">
             <span x-text="comp.type"></span>
+
+            <div class="flex items-center gap-2">
+              <button
+                class="px-2 py-1 rounded text-[10px] border border-gray-500"
+                @click="toggleCode(i)">
+                <span x-show="!comp.useCustomHtml">Code</span>
+                <span x-show="comp.useCustomHtml">Visual</span>
+              </button>
+              <span class="drag-handle text-blue-400 text-sm">≡</span>
+              <button @click="remove(i)" class="text-red-400 text-sm">✕</button>
+            </div>
           </div>
 
-          <!-- HERO -->
-          <template x-if="comp.type === 'hero'">
+          <!-- CODE MODE -->
+          <template x-if="comp.useCustomHtml">
             <div>
-              <div contenteditable @blur="update(i,'title',$event.target.innerText)"
-                   class="text-xl font-bold" x-text="comp.title"></div>
-              <div contenteditable @blur="update(i,'subtitle',$event.target.innerText)"
-                   class="text-sm text-gray-400 mt-2" x-text="comp.subtitle"></div>
+              <label class="text-[11px] text-gray-400 block mb-1">Custom HTML for this block</label>
+              <textarea
+                class="code-area w-full h-40 bg-black/70 border border-gray-700 rounded p-2 text-xs"
+                x-model="comp.customHtml"
+                @input="save()"
+              ></textarea>
+              <p class="mt-1 text-[11px] text-gray-500">
+                This HTML overrides the visual settings for this block in the preview.
+              </p>
             </div>
           </template>
 
-          <!-- TEXT -->
-          <template x-if="comp.type === 'text'">
-            <div contenteditable @blur="update(i,'content',$event.target.innerText)"
-                 class="text-sm leading-relaxed" x-text="comp.content"></div>
-          </template>
-
-          <!-- BUTTON GRID -->
-          <template x-if="comp.type === 'buttonGrid'">
+          <!-- VISUAL MODE -->
+          <template x-if="!comp.useCustomHtml">
             <div class="space-y-2">
-              <template x-for="(btn, bi) in comp.buttons">
-                <div class="flex space-x-2">
-                  <input x-model="comp.buttons[bi].text" class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs" />
-                  <input x-model="comp.buttons[bi].url" class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs" />
-                  <button @click="comp.buttons.splice(bi,1)" class="text-red-400 text-sm">✕</button>
+
+              <!-- HERO -->
+              <template x-if="comp.type === 'hero'">
+                <div>
+                  <div
+                    contenteditable
+                    @blur="update(i,'title',$event.target.innerText)"
+                    class="text-lg font-bold"
+                    x-text="comp.title"></div>
+                  <div
+                    contenteditable
+                    @blur="update(i,'subtitle',$event.target.innerText)"
+                    class="text-xs text-gray-300 mt-1"
+                    x-text="comp.subtitle"></div>
                 </div>
               </template>
-              <button @click="comp.buttons.push({text:'New Button',url:'#'})"
-                      class="text-blue-400 text-xs">+ Add Button</button>
-            </div>
-          </template>
 
-          <!-- IMAGE -->
-          <template x-if="comp.type === 'image'">
-            <div>
-              <input x-model="comp.src" class="w-full px-2 py-1 bg-gray-700 rounded text-xs mb-2" />
-              <img :src="comp.src" class="w-full rounded opacity-75" />
-            </div>
-          </template>
+              <!-- TEXT -->
+              <template x-if="comp.type === 'text'">
+                <div
+                  contenteditable
+                  @blur="update(i,'content',$event.target.innerText)"
+                  class="text-sm leading-relaxed"
+                  x-text="comp.content"></div>
+              </template>
 
-          <!-- FORM -->
-          <template x-if="comp.type === 'form'">
-            <div>
-              <template x-for="(field, fi) in comp.fields">
-                <div class="flex space-x-2 mb-2">
-                  <input x-model="field.label" class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs" />
-                  <input x-model="field.type" class="w-20 px-2 py-1 bg-gray-700 rounded text-xs" />
-                  <button @click="comp.fields.splice(fi,1)" class="text-red-400 text-sm">✕</button>
+              <!-- BUTTON GRID -->
+              <template x-if="comp.type === 'buttonGrid'">
+                <div class="space-y-2">
+                  <template x-for="(btn, bi) in comp.buttons">
+                    <div class="flex space-x-2">
+                      <input x-model="comp.buttons[bi].text"
+                             class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
+                             placeholder="Button text" />
+                      <input x-model="comp.buttons[bi].url"
+                             class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
+                             placeholder="URL" />
+                      <button @click="comp.buttons.splice(bi,1)"
+                              class="text-red-400 text-sm">✕</button>
+                    </div>
+                  </template>
+                  <button
+                    @click="comp.buttons.push({text:'New Button',url:'#'})"
+                    class="text-blue-400 text-[11px]">
+                    + Add Button
+                  </button>
                 </div>
               </template>
-              <button @click="comp.fields.push({label:'Field',type:'text'})"
-                      class="text-blue-400 text-xs">+ Add Field</button>
+
+              <!-- IMAGE -->
+              <template x-if="comp.type === 'image'">
+                <div>
+                  <input
+                    x-model="comp.src"
+                    class="w-full px-2 py-1 bg-gray-700 rounded text-xs mb-2"
+                    placeholder="Image URL" />
+                  <img :src="comp.src" class="w-full rounded opacity-75" />
+                </div>
+              </template>
+
+              <!-- FORM -->
+              <template x-if="comp.type === 'form'">
+                <div class="space-y-2">
+                  <template x-for="(field, fi) in comp.fields">
+                    <div class="flex space-x-2">
+                      <input x-model="field.label"
+                             class="flex-1 px-2 py-1 bg-gray-700 rounded text-xs"
+                             placeholder="Label" />
+                      <input x-model="field.type"
+                             class="w-20 px-2 py-1 bg-gray-700 rounded text-xs"
+                             placeholder="Type" />
+                      <button @click="comp.fields.splice(fi,1)"
+                              class="text-red-400 text-sm">✕</button>
+                    </div>
+                  </template>
+                  <button
+                    @click="comp.fields.push({label:'Field',type:'text'})"
+                    class="text-blue-400 text-[11px]">
+                    + Add Field
+                  </button>
+                </div>
+              </template>
+
             </div>
           </template>
 
@@ -125,53 +186,64 @@
 
   </div>
 
-
-  <!-- RIGHT PANE (Light Preview UI) -->
-  <div class="w-2/3 bg-gray-100 text-black p-6 overflow-y-auto">
+  <!-- RIGHT: Live Preview -->
+  <div class="hidden md:block md:w-2/3 bg-gray-100 text-black p-6 overflow-y-auto">
     <div class="max-w-3xl mx-auto space-y-10">
 
       <template x-for="comp in components">
         <div>
 
-          <!-- HERO PREVIEW -->
-          <template x-if="comp.type === 'hero'">
-            <div class="text-center py-10">
-              <h1 class="text-4xl font-bold" x-text="comp.title"></h1>
-              <p class="mt-4 text-gray-600 text-lg" x-text="comp.subtitle"></p>
-            </div>
+          <!-- If custom HTML is active, use it -->
+          <template x-if="comp.useCustomHtml && comp.customHtml">
+            <div x-html="comp.customHtml"></div>
           </template>
 
-          <!-- TEXT PREVIEW -->
-          <template x-if="comp.type === 'text'">
-            <p class="text-lg leading-relaxed" x-text="comp.content"></p>
-          </template>
+          <!-- Otherwise, use structured preview -->
+          <template x-if="!comp.useCustomHtml || !comp.customHtml">
 
-          <!-- BUTTON GRID PREVIEW -->
-          <template x-if="comp.type === 'buttonGrid'">
-            <div class="grid grid-cols-2 gap-4">
-              <template x-for="btn in comp.buttons">
-                <a :href="btn.url"
-                   class="block text-center py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">
-                  <span x-text="btn.text"></span>
-                </a>
-              </template>
-            </div>
-          </template>
+            <!-- HERO PREVIEW -->
+            <template x-if="comp.type === 'hero'">
+              <div class="text-center py-10">
+                <h1 class="text-4xl font-bold" x-text="comp.title"></h1>
+                <p class="mt-4 text-gray-600 text-lg" x-text="comp.subtitle"></p>
+              </div>
+            </template>
 
-          <!-- IMAGE PREVIEW -->
-          <template x-if="comp.type === 'image'">
-            <img :src="comp.src" class="w-full rounded shadow" />
-          </template>
+            <!-- TEXT PREVIEW -->
+            <template x-if="comp.type === 'text'">
+              <p class="text-lg leading-relaxed" x-text="comp.content"></p>
+            </template>
 
-          <!-- FORM PREVIEW -->
-          <template x-if="comp.type === 'form'">
-            <form class="space-y-4">
-              <template x-for="field in comp.fields">
-                <input :type="field.type" :placeholder="field.label"
-                       class="w-full px-4 py-3 border rounded" />
-              </template>
-              <button class="w-full py-3 bg-green-600 text-white rounded">Submit</button>
-            </form>
+            <!-- BUTTON GRID PREVIEW -->
+            <template x-if="comp.type === 'buttonGrid'">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <template x-for="btn in comp.buttons">
+                  <a :href="btn.url"
+                     class="block text-center py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">
+                    <span x-text="btn.text"></span>
+                  </a>
+                </template>
+              </div>
+            </template>
+
+            <!-- IMAGE PREVIEW -->
+            <template x-if="comp.type === 'image'">
+              <img :src="comp.src" class="w-full rounded shadow" />
+            </template>
+
+            <!-- FORM PREVIEW -->
+            <template x-if="comp.type === 'form'">
+              <form class="space-y-4">
+                <template x-for="field in comp.fields">
+                  <input
+                    :type="field.type"
+                    :placeholder="field.label"
+                    class="w-full px-4 py-3 border rounded" />
+                </template>
+                <button class="w-full py-3 bg-green-600 text-white rounded">Submit</button>
+              </form>
+            </template>
+
           </template>
 
         </div>
@@ -179,7 +251,6 @@
 
     </div>
   </div>
-
 
 <script>
 function editorApp() {
@@ -189,11 +260,11 @@ function editorApp() {
 
     add(type) {
       const templates = {
-        hero: {type:'hero',title:'Your Title',subtitle:'Your subtitle'},
-        text: {type:'text',content:'Editable text...'},
-        buttonGrid: {type:'buttonGrid',buttons:[{text:'Button',url:'#'}]},
-        image: {type:'image',src:'https://via.placeholder.com/800x400'},
-        form: {type:'form',fields:[{label:'Name',type:'text'}]}
+        hero: {type:'hero',title:'Your Title',subtitle:'Your subtitle',useCustomHtml:false,customHtml:''},
+        text: {type:'text',content:'Editable text...',useCustomHtml:false,customHtml:''},
+        buttonGrid: {type:'buttonGrid',buttons:[{text:'Button',url:'#'}],useCustomHtml:false,customHtml:''},
+        image: {type:'image',src:'https://via.placeholder.com/800x400',useCustomHtml:false,customHtml:''},
+        form: {type:'form',fields:[{label:'Name',type:'text'}],useCustomHtml:false,customHtml:''}
       };
       this.components.push(templates[type]);
       this.save();
@@ -209,27 +280,85 @@ function editorApp() {
       this.save();
     },
 
+    toggleCode(i) {
+      const comp = this.components[i];
+      if (!comp.useCustomHtml) {
+        // turning code mode ON – generate starter HTML if empty
+        if (!comp.customHtml || comp.customHtml.trim() === "") {
+          comp.customHtml = this.generateHtml(comp);
+        }
+        comp.useCustomHtml = true;
+      } else {
+        // back to visual mode
+        comp.useCustomHtml = false;
+      }
+      this.save();
+    },
+
+    generateHtml(comp) {
+      if (comp.type === "hero") {
+        return `
+<section class="py-10 text-center">
+  <h1 class="text-4xl font-bold">${comp.title || "Your Title"}</h1>
+  <p class="mt-4 text-lg text-gray-600">${comp.subtitle || "Your subtitle"}</p>
+</section>`.trim();
+      }
+      if (comp.type === "text") {
+        return `<p class="text-lg leading-relaxed">${comp.content || "Editable text..."}</p>`;
+      }
+      if (comp.type === "buttonGrid") {
+        const buttonsHtml = (comp.buttons || []).map(
+          b => `<a href="${b.url || "#"}" class="block text-center py-3 bg-blue-600 text-white rounded shadow mb-3">${b.text || "Button"}</a>`
+        ).join("\n");
+        return `<div class="space-y-3">\n${buttonsHtml}\n</div>`;
+      }
+      if (comp.type === "image") {
+        return `<img src="${comp.src || "https://via.placeholder.com/800x400"}" class="w-full rounded shadow" />`;
+      }
+      if (comp.type === "form") {
+        const fieldsHtml = (comp.fields || []).map(
+          f => `<input type="${f.type || "text"}" placeholder="${f.label || "Field"}" class="w-full px-4 py-3 border rounded mb-3" />`
+        ).join("\n");
+        return `
+<form>
+${fieldsHtml}
+  <button class="w-full py-3 bg-green-600 text-white rounded">Submit</button>
+</form>`.trim();
+      }
+      return "<div></div>";
+    },
+
     async save() {
-      await fetch(`${CONFIG.BACKEND_URL}/save-project`, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          projectId: "default",
-          name: this.projectName,
-          components: this.components
-        })
-      });
+      try {
+        await fetch(`${CONFIG.BACKEND_URL}/save-project`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            projectId: "default",
+            name: this.projectName,
+            components: this.components
+          })
+        });
+      } catch (e) {
+        console.warn("Save failed (backend may not be wired yet):", e);
+      }
     },
 
     init() {
       fetch(`${CONFIG.BACKEND_URL}/get-project/default`)
         .then(r => r.json())
         .then(data => {
-          if (data.components) {
-            this.components = data.components;
-            this.projectName = data.name;
+          if (data && Array.isArray(data.components)) {
+            // Ensure newer fields exist
+            this.components = data.components.map(c => ({
+              useCustomHtml: false,
+              customHtml: "",
+              ...c
+            }));
+            this.projectName = data.name || this.projectName;
           }
-        });
+        })
+        .catch(() => { /* ignore if backend not ready */ });
 
       new Sortable(this.$refs.builder, {
         handle: ".drag-handle",
